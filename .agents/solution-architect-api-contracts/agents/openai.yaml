@@ -1,0 +1,4 @@
+interface:
+  display_name: "Solution Architect: API Contracts"
+  short_description: "Define contracts from approved architecture"
+  default_prompt: "Use $solution-architect-api-contracts to prepare API and integration contracts from the approved BRD and application plan."

@@ -1,0 +1,74 @@
+model = "gpt-6-luna"
+model_reasoning_effort = "medium"
+# ==========================================================
+# Google Stitch MCP
+# ==========================================================
+
+[mcp_servers.stitch]
+url = "https://stitch.googleapis.com/mcp"
+startup_timeout_sec = 30
+tool_timeout_sec = 180
+
+[mcp_servers.stitch.env_http_headers]
+X-Goog-Api-Key = "STITCH_API_KEY"
+
+[mcp_servers.stitch.tools.create_project]
+approval_mode = "approve"
+
+[mcp_servers.stitch.tools.create_design_system]
+approval_mode = "approve"
+
+[mcp_servers.stitch.tools.update_design_system]
+approval_mode = "approve"
+
+[mcp_servers.stitch.tools.generate_screen_from_text]
+approval_mode = "approve"
+
+
+# ==========================================================
+# Microsoft Playwright MCP
+#
+# Uses the Docker daemon INSIDE the Docker Sandbox microVM.
+# Therefore the browser remains sandboxed from Windows.
+# ==========================================================
+
+[mcp_servers.playwright]
+command = "docker"
+args = [
+    "run",
+    "-i",
+    "--rm",
+    "--init",
+    "--pull=always",
+    "mcr.microsoft.com/playwright/mcp"
+]
+startup_timeout_sec = 180
+tool_timeout_sec = 180
+
+
+# ==========================================================
+# Chrome DevTools MCP
+#
+# Runs via npx inside the Docker Sandbox.
+# Launches Google Chrome headlessly inside the microVM.
+# ==========================================================
+
+[mcp_servers.chrome-devtools]
+command = "npx"
+args = [
+    "-y",
+    "chrome-devtools-mcp@latest",
+    "--headless",
+    "--isolated"
+]
+startup_timeout_sec = 60
+tool_timeout_sec = 180
+
+[tui]
+screen_reader_detection_done = true
+
+[tui.model_availability_nux]
+gpt-6-astra = 2
+
+[projects."/teamspace/studios/this_studio"]
+trust_level = "trusted"

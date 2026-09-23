@@ -1,0 +1,4 @@
+interface:
+  display_name: "Angular Enterprise Architect"
+  short_description: "Architect modern Angular applications"
+  default_prompt: "Use $angular-enterprise-architect to review or implement one approved Angular frontend task from the project documents and contracts."
