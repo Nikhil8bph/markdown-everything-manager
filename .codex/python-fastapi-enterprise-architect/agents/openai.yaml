@@ -1,0 +1,4 @@
+interface:
+  display_name: "Python FastAPI Enterprise Architect"
+  short_description: "Build contract-driven Python FastAPI backends"
+  default_prompt: "Use $python-fastapi-enterprise-architect to implement one approved FastAPI backend task from the project documents and contracts."

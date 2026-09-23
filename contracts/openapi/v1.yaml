@@ -1,0 +1,504 @@
+openapi: 3.1.0
+info:
+  title: MarkCraft Vault API
+  version: 1.0.0
+  description: Same-origin localhost filesystem vault API.
+servers:
+  - url: http://127.0.0.1:8080
+security: []
+tags:
+  - name: Vault
+paths:
+  /api/v1/vault/tree:
+    get:
+      tags: [Vault]
+      operationId: getVaultTree
+      summary: List folders and Markdown files recursively
+      responses:
+        '200':
+          description: Vault tree, including an empty array for an empty vault.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TreeResponse'
+        '500':
+          $ref: '#/components/responses/StorageFailure'
+  /api/v1/vault/documents:
+    get:
+      tags: [Vault]
+      operationId: getDocument
+      summary: Read a Markdown document
+      parameters:
+        - $ref: '#/components/parameters/Path'
+      responses:
+        '200':
+          description: Persisted document and its current revision.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/StorageFailure'
+    put:
+      tags: [Vault]
+      operationId: putDocument
+      summary: Create or conditionally replace a Markdown document
+      description: Send exactly one of If-None-Match:* for create or If-Match with the quoted current revision for replace. Replacement follows an explicit UI overwrite confirmation when a create collided.
+      parameters:
+        - $ref: '#/components/parameters/Path'
+        - $ref: '#/components/parameters/IfMatchOptional'
+        - $ref: '#/components/parameters/IfNoneMatchOptional'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PutDocumentRequest'
+      responses:
+        '200':
+          description: Existing document replaced.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentResponse'
+        '201':
+          description: New document created.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '413':
+          $ref: '#/components/responses/TooLarge'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '500':
+          $ref: '#/components/responses/StorageFailure'
+  /api/v1/vault/folders:
+    post:
+      tags: [Vault]
+      operationId: createFolder
+      summary: Create one folder without implicitly creating parents
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFolderRequest'
+      responses:
+        '201':
+          description: Folder created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FolderResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/StorageFailure'
+  /api/v1/vault/uploads:
+    post:
+      tags: [Vault]
+      operationId: uploadDocuments
+      summary: Upload a batch of Markdown documents
+      description: The total UTF-8 content size of all files must be at most 25,000,000 bytes. Validate all paths, revisions, and duplicate names before writing. If an I/O failure occurs after writing starts, return a per-file result and do not automatically retry.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UploadRequest'
+      responses:
+        '200':
+          description: All files committed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadResponse'
+        '207':
+          description: One or more files failed after writes began; results identify every file.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '413':
+          $ref: '#/components/responses/TooLarge'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '500':
+          $ref: '#/components/responses/StorageFailure'
+  /api/v1/vault/moves:
+    post:
+      tags: [Vault]
+      operationId: moveItem
+      summary: Rename or move an item without overwriting a destination
+      parameters:
+        - $ref: '#/components/parameters/IfMatchRequired'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MoveRequest'
+      responses:
+        '200':
+          description: Item moved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '500':
+          $ref: '#/components/responses/StorageFailure'
+  /api/v1/vault/items:
+    delete:
+      tags: [Vault]
+      operationId: deleteItem
+      summary: Permanently delete a file or folder after UI confirmation
+      parameters:
+        - $ref: '#/components/parameters/Path'
+        - $ref: '#/components/parameters/IfMatchRequired'
+      responses:
+        '204':
+          description: Item and any descendants permanently deleted. No response body.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '500':
+          $ref: '#/components/responses/StorageFailure'
+components:
+  parameters:
+    Path:
+      name: path
+      in: query
+      required: true
+      description: Slash-separated vault-relative path; percent-encode it in the URL.
+      schema:
+        $ref: '#/components/schemas/RelativePath'
+    IfMatchOptional:
+      name: If-Match
+      in: header
+      required: false
+      description: Quoted SHA-256 revision for conditional replacement.
+      schema:
+        $ref: '#/components/schemas/QuotedRevision'
+    IfNoneMatchOptional:
+      name: If-None-Match
+      in: header
+      required: false
+      description: Send * for create-only operations.
+      schema:
+        type: string
+        const: '*'
+    IfMatchRequired:
+      name: If-Match
+      in: header
+      required: true
+      description: Quoted SHA-256 revision of the source item.
+      schema:
+        $ref: '#/components/schemas/QuotedRevision'
+  headers:
+    ETag:
+      description: Quoted current revision.
+      schema:
+        $ref: '#/components/schemas/QuotedRevision'
+  schemas:
+    RelativePath:
+      type: string
+      minLength: 1
+      maxLength: 1024
+      description: Additional path segment and vault-containment rules apply.
+      example: Notes/idea.md
+    Revision:
+      type: string
+      pattern: '^[0-9a-f]{64}$'
+    QuotedRevision:
+      type: string
+      pattern: '^"[0-9a-f]{64}"$'
+    Timestamp:
+      type: string
+      format: date-time
+    Node:
+      type: object
+      additionalProperties: false
+      required: [name, path, type, updatedAt, revision]
+      properties:
+        name:
+          type: string
+        path:
+          $ref: '#/components/schemas/RelativePath'
+        type:
+          type: string
+          enum: [file, folder]
+        updatedAt:
+          $ref: '#/components/schemas/Timestamp'
+        revision:
+          $ref: '#/components/schemas/Revision'
+        size:
+          type: integer
+          minimum: 0
+          description: Present for files only, in bytes.
+        children:
+          type: array
+          description: Present for folders only; folders precede files and names sort naturally.
+          items:
+            $ref: '#/components/schemas/Node'
+    Document:
+      type: object
+      additionalProperties: false
+      required: [path, name, content, updatedAt, size, revision]
+      properties:
+        path:
+          $ref: '#/components/schemas/RelativePath'
+        name:
+          type: string
+        content:
+          type: string
+        updatedAt:
+          $ref: '#/components/schemas/Timestamp'
+        size:
+          type: integer
+          minimum: 0
+        revision:
+          $ref: '#/components/schemas/Revision'
+    SuccessBase:
+      type: object
+      required: [success, timestamp]
+      properties:
+        success:
+          type: boolean
+          const: true
+        timestamp:
+          $ref: '#/components/schemas/Timestamp'
+    TreeResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessBase'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/Node'
+    DocumentResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessBase'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              $ref: '#/components/schemas/Document'
+    FolderResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessBase'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              $ref: '#/components/schemas/Node'
+    ItemResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessBase'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              $ref: '#/components/schemas/Node'
+    PutDocumentRequest:
+      type: object
+      additionalProperties: false
+      required: [content]
+      properties:
+        content:
+          type: string
+          description: Complete UTF-8 Markdown text; at most 25,000,000 bytes when encoded.
+    CreateFolderRequest:
+      type: object
+      additionalProperties: false
+      required: [path]
+      properties:
+        path:
+          $ref: '#/components/schemas/RelativePath'
+    UploadFile:
+      type: object
+      additionalProperties: false
+      required: [name, content, expectedRevision]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          description: One filename; must end in .md.
+        content:
+          type: string
+        expectedRevision:
+          oneOf:
+            - $ref: '#/components/schemas/Revision'
+            - type: 'null'
+          description: Null for create; current revision for a confirmed overwrite.
+    UploadRequest:
+      type: object
+      additionalProperties: false
+      required: [folder, files]
+      properties:
+        folder:
+          type: string
+          description: Empty string targets vault root; otherwise a relative folder path.
+        files:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/UploadFile'
+    UploadResult:
+      type: object
+      additionalProperties: false
+      required: [path, status]
+      properties:
+        path:
+          $ref: '#/components/schemas/RelativePath'
+        status:
+          type: string
+          enum: [created, replaced, failed, notAttempted]
+        revision:
+          $ref: '#/components/schemas/Revision'
+        error:
+          $ref: '#/components/schemas/ErrorInfo'
+    UploadResponse:
+      type: object
+      additionalProperties: false
+      required: [success, data, timestamp]
+      properties:
+        success:
+          type: boolean
+          description: True for 200; false for 207 partial outcome.
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/UploadResult'
+        timestamp:
+          $ref: '#/components/schemas/Timestamp'
+    MoveRequest:
+      type: object
+      additionalProperties: false
+      required: [from, to]
+      properties:
+        from:
+          $ref: '#/components/schemas/RelativePath'
+        to:
+          $ref: '#/components/schemas/RelativePath'
+    ErrorDetail:
+      type: object
+      additionalProperties: false
+      required: [field, issue]
+      properties:
+        field:
+          type: string
+        issue:
+          type: string
+    ErrorInfo:
+      type: object
+      additionalProperties: false
+      required: [code, message, details]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorDetail'
+    ErrorResponse:
+      type: object
+      additionalProperties: false
+      required: [success, error, timestamp]
+      properties:
+        success:
+          type: boolean
+          const: false
+        error:
+          $ref: '#/components/schemas/ErrorInfo'
+        timestamp:
+          $ref: '#/components/schemas/Timestamp'
+  responses:
+    BadRequest:
+      description: Invalid request, path, or missing conditional header.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Source item or required parent does not exist.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: Destination exists or duplicate batch path.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    PreconditionFailed:
+      description: Create path exists or revision is stale.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    TooLarge:
+      description: Request exceeds 25,000,000 UTF-8 content bytes.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unprocessable:
+      description: Malformed OKF frontmatter or unsupported file.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    StorageFailure:
+      description: Unexpected local storage failure.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'

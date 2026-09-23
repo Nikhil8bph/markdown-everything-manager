@@ -1,0 +1,17 @@
+<div class="dialog-backdrop">
+  <section class="dialog" role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="table-title" cdkTrapFocus [cdkTrapFocusAutoCapture]="true" (keydown)="onKeydown($event)">
+    <header><h2 id="table-title">Insert Markdown Table</h2><button type="button" aria-label="Close table dialog" (click)="dismiss.emit()">×</button></header>
+    <div class="fields">
+      <label for="table-columns">Columns (1–10)<input id="table-columns" type="number" min="1" max="10" [value]="columns()" (input)="setColumns($event)" /></label>
+      <label for="table-rows">Rows (1–20)<input id="table-rows" type="number" min="1" max="20" [value]="rows()" (input)="setRows($event)" /></label>
+    </div>
+    <fieldset><legend>Alignment</legend>
+      @for (choice of ['left', 'center', 'right']; track choice) {
+        <button type="button" [attr.aria-pressed]="alignment() === choice" (click)="alignment.set($any(choice))">{{ choice }}</button>
+      }
+    </fieldset>
+    @if (!valid()) { <p class="error" role="alert">Enter 1–10 columns and 1–20 rows.</p> }
+    <div class="preview"><strong>Preview</strong><pre>{{ preview() }}</pre></div>
+    <footer><button type="button" (click)="dismiss.emit()">Cancel</button><button type="button" class="primary" [disabled]="!valid()" (click)="confirm()">Insert Table</button></footer>
+  </section>
+</div>

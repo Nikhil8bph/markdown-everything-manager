@@ -1,0 +1,4 @@
+interface:
+  display_name: "Implementation Architect"
+  short_description: "Turn approved contracts into traceable tasks"
+  default_prompt: "Use $implementation-architect to prepare the implementation strategy and task-status table from the approved planning documents."

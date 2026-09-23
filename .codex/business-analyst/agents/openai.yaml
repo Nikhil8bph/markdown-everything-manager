@@ -1,0 +1,4 @@
+interface:
+  display_name: "Business Analyst"
+  short_description: "Discover requirements and prepare an approved BRD"
+  default_prompt: "Use $business-analyst to draft the BRD from this product idea and identify the key unanswered requirements."

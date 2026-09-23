@@ -1,0 +1,4 @@
+interface:
+  display_name: "Infrastructure Agent"
+  short_description: "Build infrastructure from project contracts"
+  default_prompt: "Use $infrastructure-agent to inspect the project docs and contracts, then design or implement its infrastructure."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Spring Boot Enterprise Architect"
+  short_description: "Architect enterprise Spring Boot backends"
+  default_prompt: "Use $spring-boot-enterprise-architect to review or implement one approved Spring Boot backend task from the project documents and contracts."

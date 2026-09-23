@@ -1,0 +1,4 @@
+interface:
+  display_name: "UX Design with Google Stitch"
+  short_description: "Create UX designs from approved contracts"
+  default_prompt: "Use $ux-design-stitch to create or update the UX design handoff from the approved product documents using Google Stitch MCP."

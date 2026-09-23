@@ -1,0 +1,36 @@
+<div class="dashboard">
+  <div class="dashboard__inner">
+    <header class="hero">
+      <div><h1>Markdown Vault <span>OKF v0.2</span></h1><p>Backend folder storage · Strictly .md files · Open Knowledge Format v0.2</p></div>
+      <div class="actions">
+        <button type="button" disabled title="Upload .md files">⇧ Upload .md</button>
+        <button type="button" disabled>▣ New Folder</button>
+        <button type="button" disabled>＋ New .md File</button>
+      </div>
+    </header>
+    <div class="dropzone" aria-label="Upload Markdown files"><strong>Drop your .md files here, or browse computer</strong><p>Markdown files are normalized to OKF v0.2 on upload.</p></div>
+    <label class="visually-hidden" for="dashboard-search">Search Markdown files</label>
+    <input id="dashboard-search" type="search" placeholder="Search all .md files across all folders..." [value]="search()" (input)="onSearch($event)" />
+    @if (search()) {
+      <section aria-label="Search results"><h2>Search Results ({{ matches().length }})</h2>
+        @if (matches().length === 0) { <p class="empty">No .md files found matching "{{ search() }}"</p> }
+        <div class="cards">@for (file of matches(); track file.path) {
+          <button type="button" class="card" (click)="openFile.emit(file.path)"><small>{{ file.folder }} · {{ size(file.size) }}</small><strong>{{ file.name }}</strong><small>Updated {{ date(file.updatedAt) }}</small></button>
+        }</div>
+      </section>
+    } @else {
+      <section aria-label="Vault folders"><h2>Folders ({{ summary().folders.length }})</h2>
+        @if (summary().folders.length === 0) { <p class="empty">No folders yet in the backend vault.</p> }
+        <div class="cards">@for (folder of summary().folders; track folder.path) {
+          <div class="card"><strong>▣ {{ folder.name }}</strong><small>{{ folder.path }}</small></div>
+        }</div>
+      </section>
+      <section aria-label="Recent files"><h2>Recent .md Files ({{ summary().files.length }})</h2>
+        @if (summary().files.length === 0) { <p class="empty">No .md files yet. Create or upload one to get started.</p> }
+        <div class="cards">@for (file of recent(); track file.path) {
+          <button type="button" class="card" (click)="openFile.emit(file.path)"><small>{{ file.folder }} · {{ size(file.size) }}</small><strong>{{ file.name }}</strong><small>Updated {{ date(file.updatedAt) }}</small></button>
+        }</div>
+      </section>
+    }
+  </div>
+</div>

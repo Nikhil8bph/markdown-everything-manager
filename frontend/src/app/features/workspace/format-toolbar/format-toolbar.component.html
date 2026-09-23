@@ -1,0 +1,7 @@
+<div class="ribbon" role="toolbar" aria-label="Markdown formatting">
+  @for (tool of tools; track tool.action) {
+    <button type="button" [attr.aria-label]="tool.title" [title]="tool.title" (mousedown)="$event.preventDefault()" (click)="format.emit(tool.action)">{{ tool.label }}</button>
+  }
+  <button #tableTrigger type="button" aria-label="Insert table" title="Insert table" (mousedown)="$event.preventDefault()" (click)="openTable.emit()">▦ Table</button>
+  <button type="button" aria-label="Find and replace" title="Find and replace (Ctrl+F)" (click)="openFind.emit()">⌕ Find</button>
+</div>

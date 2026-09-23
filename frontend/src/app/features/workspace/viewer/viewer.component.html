@@ -1,0 +1,21 @@
+<div class="viewer">
+  <nav class="toc" [class.toc--closed]="!tocOpen()" aria-label="Table of contents">
+    <button type="button" class="toc__toggle" aria-controls="viewer-toc-items" [attr.aria-expanded]="tocOpen()" (click)="toggleToc()">Table of contents</button>
+    @if(tocOpen()) {
+      <div id="viewer-toc-items">
+        @for(heading of headings(); track heading.id) {
+          <button type="button" class="toc__item" [style.padding-left.px]="8 + heading.level * 10" (click)="scrollTo(heading.id)">{{ heading.text }}</button>
+        }
+        @if(!headings().length) { <p class="toc__empty" role="status">No headings in this document.</p> }
+      </div>
+    }
+  </nav>
+  <section class="viewer__main" aria-label="Rendered Markdown">
+    <header>
+      <strong>Rendered Markdown</strong>
+      <span class="metadata-state" [class.metadata-state--invalid]="!metadata().valid" role="status">{{ metadata().valid ? 'OKF v0.2 valid' : 'OKF metadata needs attention' }}</span>
+      <button type="button" class="metadata-button" aria-label="Edit OKF metadata" (click)="openInspector.emit()">Metadata</button>
+    </header>
+    <div #contentRoot id="rendered-content" class="rendered" role="region" aria-label="Rendered Markdown preview" tabindex="0" [innerHTML]="html()" (change)="toggleTask($event)" (click)="copyCode($event)" (keydown)="renderedKeydown($event)"></div>
+  </section>
+</div>

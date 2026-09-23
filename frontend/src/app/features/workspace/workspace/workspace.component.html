@@ -1,0 +1,66 @@
+<div class="workspace" [attr.data-theme]="effectiveTheme()" [class.workspace--printing]="printMode()">
+  <header class="toolbar">
+    <button #explorerTrigger type="button" class="icon-button" aria-label="Toggle explorer" [attr.aria-expanded]="drawerOpen()" (click)="toggleDrawer()">☰</button>
+    <div class="brand"><span class="brand__mark">MC</span><strong>MarkCraft</strong></div>
+    <button type="button" class="folders-button" (click)="showDashboard()">▣ <span>Folders</span></button>
+    @if (selectedPath()) { <span class="active-file" [title]="selectedPath()!">▤ {{ store.activeDraft()?.document?.name || selectedPath() }}</span> }
+    <span class="toolbar__spacer"></span>
+    @if (store.activeDraft()) {
+      <span class="save-indicator" role="status">{{ store.saveStatus() }}</span>
+      <button type="button" class="save-button" (click)="store.save()" title="Save document (Ctrl+S)">Save</button>
+      <button #exportTrigger type="button" (click)="openExport()">Export</button><button #preferencesTrigger type="button" (click)="openPreferences()" aria-label="Preferences">⚙</button>
+      <div class="modes" aria-label="Document mode">
+        <button type="button" [attr.aria-pressed]="store.mode() === 'edit'" (click)="setMode('edit')">Edit</button>
+        <button type="button" [attr.aria-pressed]="store.mode() === 'view'" (click)="setMode('view')">View</button>
+      </div>
+    }
+    <button #helpTrigger type="button" class="icon-button help-button" aria-label="Markdown syntax and shortcuts" title="Markdown syntax and shortcuts" (click)="helpOpen.set(true)">?</button>
+  </header>
+  @if (store.activeDraft() && store.mode() === 'edit') {
+    <app-format-toolbar (format)="format($event)" (openTable)="openTable()" (openFind)="openFind()" />
+  }
+  <div class="workspace__body">
+    @if (drawerOpen()) { <button type="button" class="scrim" aria-label="Close explorer" (click)="closeDrawer()"></button> }
+    <div class="sidebar" [class.sidebar--open]="drawerOpen()" [class.sidebar--hidden]="!preferences().sidebar">
+      <app-explorer [tree]="tree()" [selectedPath]="selectedPath()" [loading]="loadingTree()" [error]="treeError()"
+        (openFile)="openFile($event)" (showDashboard)="showDashboard()" (refresh)="loadTree()" (retry)="loadTree()"
+        (selectTemplate)="openTemplate($event)" (createFolder)="openMutation('folder')" (createDocument)="openMutation('document')" (upload)="openUpload()" (mutate)="openMutation('rename', $event)" />
+    </div>
+    <main class="main">
+      @if (!selectedPath()) {
+        @if (treeError() && !tree().length) {
+          <div class="main-notice" role="alert"><h1>Vault unavailable</h1><p>{{ treeError() }}</p><button type="button" (click)="loadTree()">Retry</button></div>
+        } @else if (loadingTree() && !tree().length) {
+          <div class="main-notice" role="status">Loading Markdown Vault…</div>
+        } @else { <app-dashboard [tree]="tree()" (openFile)="openFile($event)" /> }
+      } @else if (store.readError()) {
+        <div class="main-notice" role="alert"><h1>Could not open file</h1><p>{{ store.readError() }}</p><button #errorRetry type="button" (click)="store.open(selectedPath()!)">Retry</button></div>
+      } @else if (store.loading()) {
+        <div class="main-notice" role="status">Loading {{ selectedPath() }}…</div>
+      } @else if (store.activeDraft() && store.mode() === 'view') {
+        <app-viewer [document]="store.activeDraft()!.document" (contentChange)="store.edit($event)" (openInspector)="openMetadata()" (announce)="announcement.set($event)" />
+      } @else if (store.activeDraft()) {
+        <app-editor [draft]="store.activeDraft()!" [mode]="store.mode()" [saveStatus]="store.saveStatus()"
+          (contentChange)="store.edit($event)" (retrySave)="store.save()" (reviewLatest)="store.reviewLatest()"
+          (useServerCopy)="store.useServerCopy()" (replaceServerCopy)="store.replaceServerCopy()" (refreshTree)="loadTree()" [fontSize]="preferences().fontSize" [wordWrap]="preferences().wordWrap" [theme]="effectiveTheme()" (cursorChange)="setCursor($event)" />
+      }
+    </main>
+  </div>
+  <footer class="status"><span>{{ selectedPath() || 'Markdown Vault' }}</span><span>{{ store.activeDraft() ? store.saveStatus() : (tree().length ? 'Vault Ready' : 'Vault') }}</span></footer>
+  @if (store.activeDraft()) { @let m = documentMetrics(); <div class="document-stats" role="status">{{m.words}} words · {{m.characters}} characters · {{m.lines}} lines · {{m.bytes}} UTF-8 bytes@if(store.mode() === 'edit'){ · Line {{cursor().line}}, column {{cursor().column}}}</div> }
+  <div class="visually-hidden" aria-live="polite">{{ announcement() }}</div>
+  <article class="print-document" [innerHTML]="printContent()"></article>
+  @if (tableOpen()) { <app-table-dialog (insert)="insertTable($event)" (dismiss)="closeTable()" /> }
+  @if (helpOpen()) { <app-help-dialog (dismiss)="closeHelp()" /> }
+  @if (selectedTemplate(); as template) {
+    <app-template-dialog [template]="template" [tree]="tree()" [loading]="templateLoading()" [error]="templateError()"
+      [collision]="templateCollision()" [currentCopy]="templateCurrentCopy()"
+      (create)="createTemplate($event)" (reviewExisting)="reviewTemplateExisting($event)"
+      (overwrite)="overwriteTemplate($event)" (dismiss)="closeTemplate()" />
+  }
+  @if (mutation(); as kind) { <app-mutation-dialog [kind]="kind" [node]="mutationNode()" [loading]="mutationLoading()" [error]="mutationError()" [collision]="mutationCollision()" [existing]="mutationExisting()" (reviewExisting)="reviewMutationExisting()" (overwrite)="overwriteMutation()" (confirmAction)="submitMutation($event)" (deleteItem)="openMutation('delete', mutationNode())" (dismiss)="closeMutation()" /> }
+  @if (uploadOpen()) { <app-upload-dialog [tree]="tree()" [loading]="uploadLoading()" [error]="uploadError()" [results]="uploadResults()" (uploadFiles)="submitUpload($event)" (dismiss)="closeUpload()" /> }
+  @if (metadataOpen() && store.activeDraft()) { <app-metadata-dialog [metadata]="currentMetadata()" (apply)="applyMetadata($event)" (dismiss)="closeMetadata()" /> }
+  @if (exportOpen() && store.activeDraft()) { <app-export-dialog [name]="store.activeDraft()!.document.name" (exportAction)="exportDocument($event)" (dismiss)="closeExport()" /> }
+  @if (preferencesOpen()) { <app-preferences-dialog [initial]="preferences()" (changed)="applyPreferences($event)" (dismiss)="closePreferences()" /> }
+</div>

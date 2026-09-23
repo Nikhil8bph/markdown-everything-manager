@@ -1,0 +1,45 @@
+<div class="editor-pane" [class.editor-pane--light]="theme() === 'light'">
+  @if (searchOpen() && mode() === 'edit') {
+    <div class="find-bar" role="search" aria-label="Find and replace in current document">
+      <label class="visually-hidden" for="find-text">Find</label>
+      <input #findInput id="find-text" type="text" placeholder="Find..." [value]="query()" (input)="onFindInput($event)" (keydown)="onFindKeydown($event)" />
+      <span class="match-count" role="status">{{ matchFeedback() }}</span>
+      <label class="visually-hidden" for="replace-text">Replace with</label>
+      <input id="replace-text" type="text" placeholder="Replace with..." [value]="replacement()" (input)="onReplaceInput($event)" (keydown.escape)="closeSearch()" />
+      <button type="button" aria-label="Previous match" [disabled]="!matches().length" (click)="findPrevious()">↑</button>
+      <button type="button" aria-label="Next match" [disabled]="!matches().length" (click)="findNext()">↓</button>
+      <button type="button" [disabled]="!matches().length" (click)="replaceCurrent()">Replace</button>
+      <button type="button" [disabled]="!matches().length" (click)="replaceAll()">Replace All</button>
+      <button type="button" [attr.aria-pressed]="matchCase()" (click)="toggleMatchCase()" title="Match Case">Aa <span class="visually-hidden">Match Case</span></button>
+      <button type="button" aria-label="Close find and replace" (click)="closeSearch()">×</button>
+    </div>
+  }
+  @if (draft().errorCode) {
+    <section class="notice" [attr.role]="draft().errorCode === 'REVISION_CONFLICT' ? 'alert' : 'status'">
+      <h2 #notice tabindex="-1">{{ draft().errorCode === 'REVISION_CONFLICT' ? 'Save conflict' : 'Save failed' }}</h2>
+      <p>{{ draft().errorMessage }}</p>
+      <div class="notice__actions">
+        @if (draft().errorCode === 'REVISION_CONFLICT') {
+          <button type="button" (click)="reviewLatest.emit()">Review latest copy</button>
+          @if (draft().serverCopy) {
+            <button type="button" (click)="useLatest()">Use disk copy</button>
+            <button type="button" (click)="replaceDisk()">Overwrite disk copy</button>
+          }
+        } @else {
+          <button type="button" (click)="retrySave.emit()">Retry Save</button>
+          @if (draft().errorCode === 'NOT_FOUND') { <button type="button" (click)="refreshTree.emit()">Refresh vault</button> }
+        }
+      </div>
+      @if (draft().serverCopy) {
+        <details><summary>Latest disk content</summary><pre>{{ draft().serverCopy!.content }}</pre></details>
+      }
+    </section>
+  }
+  <div class="editor-header"><span>{{ mode() === 'edit' ? 'RAW MARKDOWN' : 'DOCUMENT TEXT' }} · {{ lineCount() }} lines</span><span>{{ saveStatus() }}</span></div>
+  @if (mode() === 'edit') {
+    <label class="visually-hidden" for="markdown-editor">Raw Markdown editor for {{ draft().document.name }}</label>
+    <textarea #editor id="markdown-editor" spellcheck="false" [value]="draft().content" (input)="onInput($event)" (keydown)="onEditorKeydown($event)" (click)="trackCursor()" (keyup)="trackCursor()" (select)="trackCursor()" [class.editor-pane__wrap]="wordWrap()" [style.font-size.px]="fontSize()"></textarea>
+  } @else {
+    <div class="read-pane" aria-label="Document text"><pre>{{ draft().content }}</pre></div>
+  }
+</div>

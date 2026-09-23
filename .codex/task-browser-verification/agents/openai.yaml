@@ -1,0 +1,4 @@
+interface:
+  display_name: "Task Browser Verification"
+  short_description: "Verify tasks in browser and report gaps"
+  default_prompt: "Use $task-browser-verification to test one implementation task in the browser and record hits, misses, and feedback."

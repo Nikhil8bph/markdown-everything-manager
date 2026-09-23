@@ -1,0 +1,3 @@
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { MutationDialogComponent } from './mutation-dialog.component';
+describe('MutationDialogComponent', () => { let fixture: ComponentFixture<MutationDialogComponent>; beforeEach(async () => { await TestBed.configureTestingModule({ imports: [MutationDialogComponent] }).compileComponents(); fixture = TestBed.createComponent(MutationDialogComponent); fixture.componentRef.setInput('kind', 'document'); fixture.detectChanges(); }); it('requires a safe markdown name', () => { expect(fixture.componentInstance.valid()).toBeFalsy(); fixture.componentInstance.name.set('note.md'); expect(fixture.componentInstance.valid()).toBeTruthy(); }); });

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Solution Architect: Application Planning"
+  short_description: "Plan architecture from approved requirements"
+  default_prompt: "Use $solution-architect-app-planning to prepare an application development plan from the approved BRD."

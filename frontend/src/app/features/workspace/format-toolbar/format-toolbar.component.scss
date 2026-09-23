@@ -1,0 +1,5 @@
+:host { display: block; min-width: 0; }
+.ribbon { display: flex; align-items: center; gap: 2px; box-sizing: border-box; min-width: 0; max-width: 100%; overflow-x: auto; padding: 4px 10px; border-bottom: 1px solid #292524; background: #1c1917; scrollbar-width: thin; }
+button { flex: none; border: 1px solid transparent; border-radius: 4px; padding: 4px 7px; color: #d6d3d1; background: transparent; font: 11px Inter, system-ui, sans-serif; cursor: pointer; white-space: nowrap; }
+button:hover { background: #292524; color: #fff; }button:focus-visible { outline: 2px solid #6ee7b7; outline-offset: -2px; }
+@media (prefers-reduced-motion: reduce) { .ribbon { scroll-behavior: auto; } }

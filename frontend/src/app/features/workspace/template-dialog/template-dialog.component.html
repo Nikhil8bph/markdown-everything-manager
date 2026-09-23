@@ -1,0 +1,28 @@
+<div class="dialog-backdrop">
+  <section class="dialog" role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="template-dialog-title" cdkTrapFocus [cdkTrapFocusAutoCapture]="true" (keydown)="onKeydown($event)">
+    <header><h2 id="template-dialog-title">Create Document from Template</h2><button type="button" aria-label="Close template dialog" [disabled]="loading()" (click)="dismiss.emit()">×</button></header>
+    <p class="template-title">{{ template().title }}</p>
+    <label for="template-folder">Destination folder</label>
+    <select id="template-folder" [value]="folder()" (change)="onFolder($event)">
+      <option value="">Root</option>
+      @for (node of folders(); track node.path) { <option [value]="node.path">{{ node.path }}</option> }
+    </select>
+    <label for="template-name">Document name</label>
+    <input id="template-name" type="text" [value]="name()" (input)="onName($event)" aria-describedby="template-name-help" />
+    <p id="template-name-help" class="hint">Use a unique .md filename in an existing folder.</p>
+    @if (!valid()) { <p class="error" role="alert">Enter a safe .md filename and choose an existing folder.</p> }
+    @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+    @if (collision()) {
+      <p class="collision" role="alert">A document already exists at this path. It has not been changed. Review the current copy before overwriting.</p>
+      @if (reviewed()) { <details open><summary>Current disk content</summary><pre>{{ currentCopy()!.content }}</pre></details> }
+    }
+    <footer>
+      <button type="button" [disabled]="loading()" (click)="dismiss.emit()">Cancel</button>
+      @if (collision()) {
+        <button type="button" [disabled]="!valid() || loading()" (click)="review()">Review current copy</button>
+        @if (reviewed()) { <button type="button" [disabled]="loading()" (click)="confirmOverwrite()">Overwrite Existing Document</button> }
+      }
+      <button type="button" class="primary" [disabled]="!valid() || loading()" (click)="submit()">{{ loading() ? 'Creating…' : 'Create from Template' }}</button>
+    </footer>
+  </section>
+</div>

@@ -1,0 +1,47 @@
+<button type="button" class="backdrop" tabindex="-1" aria-label="Dismiss metadata dialog" (click)="dismiss.emit()"></button>
+<section class="dialog" cdkTrapFocus cdkTrapFocusAutoCapture role="dialog" aria-modal="true"
+    aria-labelledby="metadata-title" tabindex="-1" (keydown)="keydown($event)">
+    <h2 id="metadata-title">OKF v0.2 Metadata</h2>
+    <p class="validity" [class.invalid]="!metadata().valid" role="status">
+      {{ metadata().valid ? 'Valid metadata' : metadata().errors[0] }}
+    </p>
+    @if (!metadata().yamlValid) {
+      <p class="error" role="alert">YAML could not be parsed. Cancel and correct the raw frontmatter in Edit mode before conforming it.</p>
+    } @else if (metadata().errors.length > 1) {
+      <ul class="errors" role="alert">@for(error of metadata().errors; track error){<li>{{ error }}</li>}</ul>
+    }
+    <div class="fields">
+      <label for="okf-type">Type <span>Required</span></label>
+      <input id="okf-type" [value]="values().type" (input)="change('type',$event)" aria-required="true" />
+      <label for="okf-version">Version</label>
+      <input id="okf-version" [value]="values().version" (input)="change('version',$event)" />
+      <label for="okf-title">Title</label>
+      <input id="okf-title" [value]="values().title" (input)="change('title',$event)" />
+      <label for="okf-name">Name</label>
+      <input id="okf-name" [value]="values().name" (input)="change('name',$event)" />
+      <label for="okf-description">Description</label>
+      <textarea id="okf-description" rows="3" [value]="values().description" (input)="change('description',$event)"></textarea>
+      <label for="okf-status">Status</label>
+      <input id="okf-status" [value]="values().status" (input)="change('status',$event)" />
+      <label for="okf-author">Author</label>
+      <input id="okf-author" [value]="values().author" (input)="change('author',$event)" />
+      <label for="okf-tags">Tags <span>One per line</span></label>
+      <textarea id="okf-tags" rows="3" [value]="values().tags" (input)="change('tags',$event)"></textarea>
+      <label for="okf-sources">Sources <span>One per line</span></label>
+      <textarea id="okf-sources" rows="3" [value]="values().sources" (input)="change('sources',$event)"></textarea>
+      <label for="okf-resource">Resource</label>
+      <input id="okf-resource" [value]="values().resource" (input)="change('resource',$event)" />
+      <label for="okf-stale-after">Stale after</label>
+      <input id="okf-stale-after" [value]="values().stale_after" (input)="change('stale_after',$event)" />
+      <fieldset><legend>Generated</legend>
+        <label for="okf-generated-by">By</label><input id="okf-generated-by" [value]="values().generatedBy" (input)="change('generatedBy',$event)" />
+        <label for="okf-generated-model">Model</label><input id="okf-generated-model" [value]="values().generatedModel" (input)="change('generatedModel',$event)" />
+      </fieldset>
+      <fieldset><legend>Verified</legend>
+        <label for="okf-verified-by">By</label><input id="okf-verified-by" [value]="values().verifiedBy" (input)="change('verifiedBy',$event)" />
+        <label for="okf-verified-at">At</label><input id="okf-verified-at" [value]="values().verifiedAt" (input)="change('verifiedAt',$event)" />
+      </fieldset>
+    </div>
+    <p class="preservation">Unknown YAML fields and Markdown content are kept.</p>
+    <div class="actions"><button type="button" (click)="dismiss.emit()">Cancel</button><button type="button" (click)="submit()" [disabled]="!metadata().yamlValid || !values().type.trim()">Apply / Conform</button></div>
+</section>

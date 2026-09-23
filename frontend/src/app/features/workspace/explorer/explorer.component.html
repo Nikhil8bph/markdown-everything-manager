@@ -1,0 +1,53 @@
+<nav class="explorer" aria-label="Vault explorer">
+  <div class="explorer__top">
+    <button type="button" class="heading" (click)="showDashboard.emit()">▣ All Folders</button>
+    <button type="button" title="Upload .md" aria-label="Upload .md" (click)="upload.emit()">⇧</button>
+    <button type="button" title="New Folder" aria-label="New Folder" (click)="createFolder.emit()">▣</button>
+    <button type="button" title="New .md File" aria-label="New .md File" (click)="createDocument.emit()">＋</button>
+    <button type="button" title="Refresh tree" aria-label="Refresh tree" (click)="refresh.emit()">⟳</button>
+  </div>
+  <div class="tabs" aria-label="Workspace panels">
+    <button type="button" [class.tabs__active]="activeTab() === 'files'" [attr.aria-pressed]="activeTab() === 'files'" (click)="activeTab.set('files')">Explorer</button>
+    <button type="button" disabled title="Outline is available with the viewer">Outline</button>
+    <button type="button" [class.tabs__active]="activeTab() === 'templates'" [attr.aria-pressed]="activeTab() === 'templates'" (click)="activeTab.set('templates')">Templates</button>
+  </div>
+  <div class="explorer__content">
+    @if (activeTab() === 'templates') {
+      <div #templatePanel>
+        <p class="templates-heading">Apply template to new .md file:</p>
+        @for (template of templates; track template.id) {
+          <button type="button" class="template-card" [attr.data-template-id]="template.id" [attr.aria-label]="'Use template ' + template.title" (click)="selectTemplate.emit(template)">
+            <strong>{{ template.title }}</strong><span>{{ template.description }}</span>
+          </button>
+        }
+      </div>
+    } @else {
+      <label class="visually-hidden" for="vault-filter">Filter files</label>
+      <input id="vault-filter" type="search" placeholder="Filter files..." [value]="filter()" (input)="onFilter($event)" />
+    @if (error()) {
+      <div class="notice" role="alert"><p>{{ error() }}</p><button type="button" (click)="retry.emit()">Retry</button></div>
+    } @else if (loading()) {
+      <p class="notice" role="status">Loading vault…</p>
+    } @else if (filteredTree().length === 0) {
+      <p class="notice">{{ filter() ? 'No .md files found' : 'No folders or .md files yet' }}</p>
+    } @else {
+      <div #treeRoot role="tree" tabindex="0" aria-label="Folders and Markdown files" (keydown)="onTreeKey($event)">
+        @for (node of visibleNodes(); track node.path) {
+          <button type="button" role="treeitem" class="tree-row" [class.tree-row--active]="selectedPath() === node.path"
+            [style.padding-left.px]="12 + (node.path.split('/').length - 1) * 14"
+            [attr.aria-level]="node.path.split('/').length"
+            [attr.aria-expanded]="node.type === 'folder' ? (expanded().has(node.path) || !!filter()) : null"
+            [attr.aria-selected]="selectedPath() === node.path"
+            [attr.title]="node.path" (click)="select(node)" (contextmenu)="$event.preventDefault(); mutate.emit(node)">
+            <span class="tree-row__icon" aria-hidden="true">{{ node.type === 'folder' ? (expanded().has(node.path) || filter() ? '▾' : '▸') : '▤' }}</span>
+            <span class="tree-row__name">{{ node.name }}</span>
+            @if (node.type === 'file') { <span class="tree-row__size">{{ formatSize(node.size) }}</span> }
+            @if (selectedPath() === node.path) { <span class="visually-hidden">Current file</span> }
+          </button>
+        }
+      </div>
+    }
+    }
+  </div>
+  <div class="explorer__bottom"><span>{{ error() ? 'Vault unavailable' : loading() ? 'Loading vault' : 'Vault Ready' }}</span></div>
+</nav>

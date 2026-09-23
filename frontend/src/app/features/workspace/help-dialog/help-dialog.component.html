@@ -1,0 +1,23 @@
+<div class="dialog-backdrop">
+  <section class="dialog" role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="help-title" cdkTrapFocus [cdkTrapFocusAutoCapture]="true" (keydown)="onKeydown($event)">
+    <header><h2 id="help-title">Markdown Syntax &amp; Keyboard Shortcuts</h2><button type="button" aria-label="Close help dialog" (click)="dismiss.emit()">×</button></header>
+    <div class="tabs" role="tablist" aria-label="Help topics">
+      <button type="button" role="tab" [attr.aria-selected]="tab() === 'shortcuts'" (click)="tab.set('shortcuts')">Keyboard Shortcuts</button>
+      <button type="button" role="tab" [attr.aria-selected]="tab() === 'cheatsheet'" (click)="tab.set('cheatsheet')">Markdown Cheat Sheet</button>
+    </div>
+    <div class="body">
+      @if (tab() === 'shortcuts') {
+        <div class="shortcut-grid" role="tabpanel" aria-label="Keyboard shortcuts">
+          @for (item of shortcuts; track item[0]) { <div class="shortcut"><span>{{ item[0] }}</span><kbd>{{ item[1] }}</kbd></div> }
+        </div>
+      } @else {
+        <div class="table-wrap" role="tabpanel" aria-label="Markdown cheat sheet">
+          <table><thead><tr><th>Element</th><th>Markdown Syntax</th><th>Example</th></tr></thead>
+            <tbody>@for (item of syntax; track item[0]) { <tr><td>{{ item[0] }}</td><td><code>{{ item[1] }}</code></td><td>{{ item[2] }}</td></tr> }</tbody>
+          </table>
+        </div>
+      }
+    </div>
+    <footer><button type="button" (click)="dismiss.emit()">Close</button></footer>
+  </section>
+</div>
