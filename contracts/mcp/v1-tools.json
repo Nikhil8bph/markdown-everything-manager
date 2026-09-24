@@ -1,0 +1,171 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MarkCraft MCP v1 tool catalog",
+  "description": "Resolve each tool's local inputSchema and outputSchema references before advertising it through MCP.",
+  "x-tools": [
+    {
+      "name": "get_vault_tree",
+      "description": "List the vault's folders and Markdown files recursively, with current revisions.",
+      "inputSchema": { "$ref": "#/$defs/EmptyInput" },
+      "outputSchema": { "$ref": "#/$defs/TreeOutput" },
+      "annotations": { "readOnlyHint": true, "destructiveHint": false, "idempotentHint": true, "openWorldHint": false }
+    },
+    {
+      "name": "get_document",
+      "description": "Read one persisted Markdown document and its current revision.",
+      "inputSchema": { "$ref": "#/$defs/PathInput" },
+      "outputSchema": { "$ref": "#/$defs/DocumentOutput" },
+      "annotations": { "readOnlyHint": true, "destructiveHint": false, "idempotentHint": true, "openWorldHint": false }
+    },
+    {
+      "name": "put_document",
+      "description": "Create with expectedRevision null, or explicitly replace a document using its current revision. Never overwrites a stale version.",
+      "inputSchema": { "$ref": "#/$defs/PutDocumentInput" },
+      "outputSchema": { "$ref": "#/$defs/DocumentOutput" },
+      "annotations": { "readOnlyHint": false, "destructiveHint": true, "idempotentHint": false, "openWorldHint": false }
+    },
+    {
+      "name": "create_folder",
+      "description": "Create one folder under an existing parent without replacing an existing path.",
+      "inputSchema": { "$ref": "#/$defs/PathInput" },
+      "outputSchema": { "$ref": "#/$defs/NodeOutput" },
+      "annotations": { "readOnlyHint": false, "destructiveHint": false, "idempotentHint": false, "openWorldHint": false }
+    },
+    {
+      "name": "upload_documents",
+      "description": "Create or explicitly replace a bounded batch of Markdown files; inspect every result before retrying.",
+      "inputSchema": { "$ref": "#/$defs/UploadInput" },
+      "outputSchema": { "$ref": "#/$defs/UploadOutput" },
+      "annotations": { "readOnlyHint": false, "destructiveHint": true, "idempotentHint": false, "openWorldHint": false }
+    },
+    {
+      "name": "move_item",
+      "description": "Move or rename one item using its current revision; never replace the destination.",
+      "inputSchema": { "$ref": "#/$defs/MoveInput" },
+      "outputSchema": { "$ref": "#/$defs/NodeOutput" },
+      "annotations": { "readOnlyHint": false, "destructiveHint": false, "idempotentHint": false, "openWorldHint": false }
+    },
+    {
+      "name": "delete_item",
+      "description": "Permanently delete one item and its descendants using its current revision. Requires separate agent deletion enablement.",
+      "inputSchema": { "$ref": "#/$defs/DeleteInput" },
+      "outputSchema": { "$ref": "#/$defs/DeleteOutput" },
+      "annotations": { "readOnlyHint": false, "destructiveHint": true, "idempotentHint": false, "openWorldHint": false }
+    }
+  ],
+  "$defs": {
+    "Path": { "type": "string", "minLength": 1, "maxLength": 1024, "description": "Vault-relative path; REST path and containment rules apply." },
+    "Revision": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "ExpectedRevision": { "oneOf": [{ "$ref": "#/$defs/Revision" }, { "type": "null" }] },
+    "Timestamp": { "type": "string", "format": "date-time" },
+    "EmptyInput": { "type": "object", "additionalProperties": false },
+    "PathInput": {
+      "type": "object", "additionalProperties": false, "required": ["path"],
+      "properties": { "path": { "$ref": "#/$defs/Path" } }
+    },
+    "PutDocumentInput": {
+      "type": "object", "additionalProperties": false, "required": ["path", "content", "expectedRevision"],
+      "properties": {
+        "path": { "$ref": "#/$defs/Path" },
+        "content": { "type": "string", "description": "Complete Markdown text; at most 25,000,000 UTF-8 bytes." },
+        "expectedRevision": { "$ref": "#/$defs/ExpectedRevision" }
+      }
+    },
+    "UploadFile": {
+      "type": "object", "additionalProperties": false, "required": ["name", "content", "expectedRevision"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "description": "One .md filename with no path separator." },
+        "content": { "type": "string" },
+        "expectedRevision": { "$ref": "#/$defs/ExpectedRevision" }
+      }
+    },
+    "UploadInput": {
+      "type": "object", "additionalProperties": false, "required": ["folder", "files"],
+      "properties": {
+        "folder": { "type": "string", "description": "Empty string selects the vault root; otherwise a relative folder path." },
+        "files": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/UploadFile" }, "description": "Aggregate content limit: 25,000,000 UTF-8 bytes." }
+      }
+    },
+    "MoveInput": {
+      "type": "object", "additionalProperties": false, "required": ["from", "to", "expectedRevision"],
+      "properties": {
+        "from": { "$ref": "#/$defs/Path" },
+        "to": { "$ref": "#/$defs/Path" },
+        "expectedRevision": { "$ref": "#/$defs/Revision" }
+      }
+    },
+    "DeleteInput": {
+      "type": "object", "additionalProperties": false, "required": ["path", "expectedRevision"],
+      "properties": {
+        "path": { "$ref": "#/$defs/Path" },
+        "expectedRevision": { "$ref": "#/$defs/Revision" }
+      }
+    },
+    "Node": {
+      "type": "object", "additionalProperties": false,
+      "required": ["name", "path", "type", "updatedAt", "revision"],
+      "properties": {
+        "name": { "type": "string" },
+        "path": { "$ref": "#/$defs/Path" },
+        "type": { "enum": ["file", "folder"] },
+        "updatedAt": { "$ref": "#/$defs/Timestamp" },
+        "revision": { "$ref": "#/$defs/Revision" },
+        "size": { "type": "integer", "minimum": 0 },
+        "children": { "type": "array", "items": { "$ref": "#/$defs/Node" } }
+      }
+    },
+    "Document": {
+      "type": "object", "additionalProperties": false,
+      "required": ["path", "name", "content", "updatedAt", "size", "revision"],
+      "properties": {
+        "path": { "$ref": "#/$defs/Path" },
+        "name": { "type": "string" },
+        "content": { "type": "string" },
+        "updatedAt": { "$ref": "#/$defs/Timestamp" },
+        "size": { "type": "integer", "minimum": 0 },
+        "revision": { "$ref": "#/$defs/Revision" }
+      }
+    },
+    "ErrorInfo": {
+      "type": "object", "additionalProperties": false, "required": ["code", "message", "details"],
+      "properties": {
+        "code": { "type": "string" },
+        "message": { "type": "string" },
+        "details": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["field", "issue"], "properties": { "field": { "type": "string" }, "issue": { "type": "string" } } } }
+      }
+    },
+    "UploadResult": {
+      "type": "object", "additionalProperties": false, "required": ["path", "status"],
+      "properties": {
+        "path": { "$ref": "#/$defs/Path" },
+        "status": { "enum": ["created", "replaced", "failed", "notAttempted"] },
+        "revision": { "$ref": "#/$defs/Revision" },
+        "error": { "$ref": "#/$defs/ErrorInfo" }
+      }
+    },
+    "TreeOutput": {
+      "type": "object", "additionalProperties": false, "required": ["success", "data", "timestamp"],
+      "properties": { "success": { "const": true }, "data": { "type": "array", "items": { "$ref": "#/$defs/Node" } }, "timestamp": { "$ref": "#/$defs/Timestamp" } }
+    },
+    "DocumentOutput": {
+      "type": "object", "additionalProperties": false, "required": ["success", "data", "timestamp"],
+      "properties": { "success": { "const": true }, "data": { "$ref": "#/$defs/Document" }, "timestamp": { "$ref": "#/$defs/Timestamp" } }
+    },
+    "NodeOutput": {
+      "type": "object", "additionalProperties": false, "required": ["success", "data", "timestamp"],
+      "properties": { "success": { "const": true }, "data": { "$ref": "#/$defs/Node" }, "timestamp": { "$ref": "#/$defs/Timestamp" } }
+    },
+    "UploadOutput": {
+      "type": "object", "additionalProperties": false, "required": ["success", "data", "timestamp"],
+      "properties": { "success": { "type": "boolean" }, "data": { "type": "array", "items": { "$ref": "#/$defs/UploadResult" } }, "timestamp": { "$ref": "#/$defs/Timestamp" } }
+    },
+    "DeleteOutput": {
+      "type": "object", "additionalProperties": false, "required": ["success", "data", "timestamp"],
+      "properties": {
+        "success": { "const": true },
+        "data": { "type": "object", "additionalProperties": false, "required": ["path", "deleted"], "properties": { "path": { "$ref": "#/$defs/Path" }, "deleted": { "const": true } } },
+        "timestamp": { "$ref": "#/$defs/Timestamp" }
+      }
+    }
+  }
+}

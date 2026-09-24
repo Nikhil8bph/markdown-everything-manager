@@ -86,7 +86,7 @@ flowchart LR
   - Shell rendered with title `"MarkCraft - Markdown Editor & Viewer"`.
   - Console had zero errors.
 - **Screenshot**:
-  ![01 Initial Empty Vault](./screenshots/01-initial-empty-vault.png)
+  ![01 Initial Empty Vault](./screenshots-v1/01-initial-empty-vault.png)
 
 ---
 
@@ -100,8 +100,8 @@ flowchart LR
   - HTTP `POST /api/v1/vault/folders` returned `201 Created` with `{"name":"Project-Alpha","path":"Project-Alpha","type":"folder",...}`.
   - Follow-up `GET /api/v1/vault/tree` updated the tree view and the dashboard folders card.
 - **Screenshots**:
-  ![02 Create Folder Modal](./screenshots/02-create-folder-modal.png)
-  ![03 Folder Created](./screenshots/03-folder-created.png)
+  ![02 Create Folder Modal](./screenshots-v1/02-create-folder-modal.png)
+  ![03 Folder Created](./screenshots-v1/03-folder-created.png)
 
 ---
 
@@ -122,8 +122,8 @@ flowchart LR
     ```
   - Status indicator displayed `"Saved"`.
 - **Screenshots**:
-  ![04 Create Document Modal](./screenshots/04-create-document-modal.png)
-  ![05 Document Opened in Editor](./screenshots/05-document-opened-editor.png)
+  ![04 Create Document Modal](./screenshots-v1/04-create-document-modal.png)
+  ![05 Document Opened in Editor](./screenshots-v1/05-document-opened-editor.png)
 
 ---
 
@@ -134,7 +134,7 @@ flowchart LR
   2. Verified the status header immediately switched from `"Saved"` to `"Unsaved"`.
   3. Verified the status bar metrics updated to: `95 words · 667 characters · 31 lines · 667 UTF-8 bytes`.
 - **Screenshot**:
-  ![06 Editing Content & Frontmatter](./screenshots/06-editing-content-and-frontmatter.png)
+  ![06 Editing Content & Frontmatter](./screenshots-v1/06-editing-content-and-frontmatter.png)
 
 ---
 
@@ -148,7 +148,7 @@ flowchart LR
   - HTTP `PUT /api/v1/vault/documents?path=quickstart.md` returned `200 OK`.
   - Disk content matched editor buffer character-for-character.
 - **Screenshot**:
-  ![07 Autosave & Saved State](./screenshots/07-autosave-and-saved-state.png)
+  ![07 Autosave & Saved State](./screenshots-v1/07-autosave-and-saved-state.png)
 
 ---
 
@@ -160,7 +160,7 @@ flowchart LR
   3. Observed real-time match counter `"1 of 4"`.
   4. Tested `Next match` and `Previous match` controls.
 - **Screenshot**:
-  ![08 Find Replace Panel](./screenshots/08-find-replace-panel.png)
+  ![08 Find Replace Panel](./screenshots-v1/08-find-replace-panel.png)
 
 ---
 
@@ -174,8 +174,8 @@ flowchart LR
 - **Evidence**:
   - GFM table syntax appended to editor and saved to disk.
 - **Screenshots**:
-  ![10 Table Generator Dialog](./screenshots/10-table-generator-dialog.png)
-  ![11 Table Inserted](./screenshots/11-table-inserted.png)
+  ![10 Table Generator Dialog](./screenshots-v1/10-table-generator-dialog.png)
+  ![11 Table Inserted](./screenshots-v1/11-table-inserted.png)
 
 ---
 
@@ -186,7 +186,7 @@ flowchart LR
   2. Inspected rendered output for H1/H2 elements, bold text, styled code blocks with language tags (`typescript`), and copy buttons.
   3. Verified badge `OKF v0.2 valid` appeared.
 - **Screenshot**:
-  ![14 View Mode Markdown Preview](./screenshots/14-view-mode-markdown-preview.png)
+  ![14 View Mode Markdown Preview](./screenshots-v1/14-view-mode-markdown-preview.png)
 
 ---
 
@@ -200,7 +200,7 @@ flowchart LR
   - HTTP `PUT` automatically dispatched with updated content `- [x] Run end-to-end tests`.
   - Disk verification confirmed `- [x] Run end-to-end tests`.
 - **Screenshot**:
-  ![15 Interactive Task Checkbox Toggled](./screenshots/15-interactive-task-checkbox-toggled.png)
+  ![15 Interactive Task Checkbox Toggled](./screenshots-v1/15-interactive-task-checkbox-toggled.png)
 
 ---
 
@@ -211,7 +211,7 @@ flowchart LR
   2. Clicked `"Interactive Checklist"` link in TOC.
   3. Verified viewport scrolled directly to the target heading anchor.
 - **Screenshot**:
-  ![16 Table of Contents Navigation](./screenshots/16-table-of-contents-navigation.png)
+  ![16 Table of Contents Navigation](./screenshots-v1/16-table-of-contents-navigation.png)
 
 ---
 
@@ -225,7 +225,7 @@ flowchart LR
 - **Evidence**:
   - Frontmatter normalized and written to disk with new fields cleanly preserved.
 - **Screenshot**:
-  ![17 OKF Metadata Inspector](./screenshots/17-okf-metadata-inspector.png)
+  ![17 OKF Metadata Inspector](./screenshots-v1/17-okf-metadata-inspector.png)
 
 ---
 
@@ -240,8 +240,8 @@ flowchart LR
   - HTTP `PUT /api/v1/vault/documents?path=Project-Alpha/okf-v02-technical-guide.md` returned `201 Created`.
   - Created 55-line comprehensive guide inside `Project-Alpha`.
 - **Screenshots**:
-  ![12 Template Picker Dialog](./screenshots/12-template-picker-dialog.png)
-  ![13 Document from Template](./screenshots/13-document-from-template.png)
+  ![12 Template Picker Dialog](./screenshots-v1/12-template-picker-dialog.png)
+  ![13 Document from Template](./screenshots-v1/13-document-from-template.png)
 
 ---
 
@@ -255,8 +255,8 @@ flowchart LR
   - HTTP `POST /api/v1/vault/moves` returned `200 OK` with new path `quickstart-v1.md`.
   - Disk verification confirmed `quickstart.md` moved to `quickstart-v1.md`.
 - **Screenshots**:
-  ![18 Rename File Dialog](./screenshots/18-rename-file-dialog.png)
-  ![19 File Renamed in Tree](./screenshots/19-file-renamed.png)
+  ![18 Rename File Dialog](./screenshots-v1/18-rename-file-dialog.png)
+  ![19 File Renamed in Tree](./screenshots-v1/19-file-renamed.png)
 
 ---
 
@@ -271,8 +271,8 @@ flowchart LR
   - HTTP `POST /api/v1/vault/uploads` returned `200 OK` with `markcraft-test-upload.md: created`.
   - Tree and disk updated with new file.
 - **Screenshots**:
-  ![20 Upload Markdown Dialog](./screenshots/20-upload-markdown-dialog.png)
-  ![21 File Uploaded Success](./screenshots/21-file-uploaded-success.png)
+  ![20 Upload Markdown Dialog](./screenshots-v1/20-upload-markdown-dialog.png)
+  ![21 File Uploaded Success](./screenshots-v1/21-file-uploaded-success.png)
 
 ---
 
@@ -295,8 +295,8 @@ flowchart LR
   3. Verified instantaneous theme repaint across the app shell.
   4. Re-opened preferences and switched back to `Dark`.
 - **Screenshots**:
-  ![22 Preferences Dialog](./screenshots/22-preferences-dialog.png)
-  ![23 Light Theme Switched](./screenshots/23-dark-light-theme-switched.png)
+  ![22 Preferences Dialog](./screenshots-v1/22-preferences-dialog.png)
+  ![23 Light Theme Switched](./screenshots-v1/23-dark-light-theme-switched.png)
 
 ---
 
@@ -311,8 +311,8 @@ flowchart LR
   - HTTP `DELETE /api/v1/vault/items?path=markcraft-test-upload.md` returned `204 No Content`.
   - Disk verification confirmed file removed permanently from `/tmp/markcraft-e2e/.markcraft/vault`.
 - **Screenshots**:
-  ![24 Delete Confirmation Dialog](./screenshots/24-delete-confirmation-dialog.png)
-  ![25 Item Deleted from Vault Tree](./screenshots/25-item-deleted-vault-tree.png)
+  ![24 Delete Confirmation Dialog](./screenshots-v1/24-delete-confirmation-dialog.png)
+  ![25 Item Deleted from Vault Tree](./screenshots-v1/25-item-deleted-vault-tree.png)
 
 ---
 
@@ -324,7 +324,7 @@ flowchart LR
   3. Clicked `Toggle explorer` button.
   4. Observed off-canvas navigation drawer smoothly open over content.
 - **Screenshot**:
-  ![26 Mobile Viewport Drawer](./screenshots/26-mobile-viewport-drawer.png)
+  ![26 Mobile Viewport Drawer](./screenshots-v1/26-mobile-viewport-drawer.png)
 
 ---
 

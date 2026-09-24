@@ -14,11 +14,14 @@ import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.springframework.http.MediaType;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import tools.jackson.databind.ObjectMapper;
 
 @Component
+@Order(Ordered.HIGHEST_PRECEDENCE)
 public class LoopbackHostFilter extends OncePerRequestFilter {
 
     private static final Pattern LOOPBACK_HOST = Pattern.compile("^(127\\.0\\.0\\.1|localhost|\\[::1\\])(?::([0-9]{1,5}))?$");
@@ -39,7 +42,8 @@ public class LoopbackHostFilter extends OncePerRequestFilter {
                     new ErrorInfo("INVALID_REQUEST", "Request host is not allowed", List.of())));
             return;
         }
-        if (isMutation(request.getMethod()) && !isAllowedOrigin(request.getHeader("Origin"), request.getHeader("Host"))) {
+        if ((isMutation(request.getMethod()) || request.getServletPath().startsWith("/mcp"))
+                && !isAllowedOrigin(request.getHeader("Origin"), request.getHeader("Host"))) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
             mapper.writeValue(response.getOutputStream(), ErrorResponse.of(

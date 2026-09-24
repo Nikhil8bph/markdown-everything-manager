@@ -3,14 +3,14 @@
 | Field | Value |
 |---|---|
 | Status | Approved |
-| Version | 1.0 |
-| Date | 2026-09-23 |
-| Inputs | Approved BRD v1.0, Application Development Plan v1.0, API specification v1.0, `contracts/openapi/v1.yaml`, and `contracts/schemas/okf-frontmatter.schema.json` |
-| Approval evidence | User confirmed this 14-task strategy and its one-task-per-run boundaries on 2026-09-23. |
+| Version | 1.1 |
+| Date | 2026-09-24 |
+| Inputs | Approved BRD v1.1, Application Development Plan v1.1, API specification v1.1, `contracts/openapi/v1.yaml`, `contracts/schemas/okf-frontmatter.schema.json`, and `contracts/mcp/v1-tools.json` |
+| Approval evidence | User confirmed the original 14-task strategy on 2026-09-23, approved the three revised upstream MCP artifacts on 2026-09-24, and explicitly confirmed this v1.1 strategy on 2026-09-24. |
 
 ## Strategy and delivery gates
 
-Build the approved single-module Spring Boot filesystem API and adapt the source Angular UI inside the target's `backend/` and `frontend/`. The backend uses Java 21, Spring Boot 4.1.1, Maven Wrapper, and `io.github.nikhil8bph.markcraft`; the frontend uses Angular 21 and the approved separate component files. Keep `../../Markdown-Everything` unchanged. There is no database, messaging, authentication, or AsyncAPI work.
+The v1.0 workspace is complete. Add the approved local MCP transport to the same single-module Spring Boot backend, with a startup enable switch, bearer token, seven vault tools, and a separate agent-deletion switch. Reuse the existing vault services and facades; keep `../../Markdown-Everything` unchanged. There is no database, messaging, browser login, Angular screen, or AsyncAPI work for MCP.
 
 Every `TASK-*` below is one agent run. A run may read dependency work but changes only its own task scope and status row. Angular tasks wait for `docs/DESIGN.md` status `Ready for Angular` covering their screen scope. `ux-design-stitch` owns one UX scope per separate run; a single scope for this workspace shell, dashboard, editor, viewer, and dialogs is planned after the contract gate. Browser verification is task scoped after relevant UI tasks.
 
@@ -20,6 +20,7 @@ Every `TASK-*` below is one agent run. A run may read dependency work but change
 | P1 — Vault API | Seven contracted operations pass backend and contract checks | P0 |
 | P2 — Workspace UI | Approved design is implemented; source feature parity flows work against API | P1 and `docs/DESIGN.md` |
 | P3 — Packaged local app | One-origin localhost build and browser acceptance evidence | P2 |
+| P4 — Local MCP access | Secure opt-in MCP connection, seven contracted tools, client setup guide, and packaged-client evidence | P3 and approved stage-4 MCP revision |
 
 ## Traceability
 
@@ -39,6 +40,12 @@ Every `TASK-*` below is one agent run. A run may read dependency work but change
 | FR-ERROR-001 | Vault revisions and Angular store | `Revision`, `ETag`, `ErrorResponse` | TASK-VAULT-002, TASK-WEB-002, TASK-WEB-004 |
 | FR-BOUNDARY-001 | Vault path containment | `RelativePath`, all vault operations | TASK-VAULT-001 through TASK-VAULT-004 |
 | NFR-001 through NFR-006 | Build, loopback runtime, tests | OpenAPI v1 and OKF schema | TASK-FOUND-001, TASK-FOUND-002, TASK-RUN-001, TASK-VERIFY-001 |
+| FR-MCP-001, FR-MCP-002 | MCP transport and security filter | Streamable HTTP `/mcp`, bearer token | BLI-MCP / TASK-MCP-001 |
+| FR-MCP-003 | MCP adapter over vault read services | `get_vault_tree`, `get_document` | TASK-MCP-002 |
+| FR-MCP-004 | MCP adapter over vault write services | `put_document`, `create_folder`, `upload_documents`, `move_item` | TASK-MCP-002, TASK-MCP-003 |
+| FR-MCP-005 | MCP deletion policy and vault item facade | `delete_item`, `DELETE_DISABLED` | TASK-MCP-003 |
+| FR-MCP-006 | Local runtime documentation | MCP endpoint, startup settings, client bearer configuration | TASK-MCP-004 |
+| NFR-007, NFR-008 | MCP security and shared file-integrity boundary | `contracts/mcp/v1-tools.json`, existing vault rules | TASK-MCP-001 through TASK-MCP-004 |
 
 ## Work breakdown structure
 
@@ -128,9 +135,33 @@ Every `TASK-*` below is one agent run. A run may read dependency work but change
 - **Activity: Browser verification.** Subtasks: inspect the packaged workspace load, empty state, API network request, console, and loopback origin; capture reproducible evidence.
 - **Activity: Closeout.** Subtasks: link this evidence and the individual UI task browser checks to BRD stories; keep unresolved defects open rather than marking acceptance complete.
 
+### P4 — Local MCP access
+
+#### BLI-MCP — Owner-authorized agent access to the existing vault
+
+**TASK-MCP-001 — MCP transport and authorization.** Owner: spring-boot-enterprise-architect. Dependencies: approved stage-4 MCP revision and TASK-RUN-001. Scope: Maven MCP server dependency, opt-in WebMVC Streamable HTTP transport, startup settings, and MCP request security under the existing backend. Acceptance: Given default settings, when a client requests MCP, then the route is unavailable; given MCP enabled with a token, when a local client sends the correct bearer token, then protocol initialization and tool discovery work, while missing/invalid tokens or invalid hosts/origins are rejected before MCP handling.
+
+- **Activity: Backend engineering.** Subtasks: add Spring AI 2.0.1 WebMVC MCP server starter and BOM via Maven; configure Streamable HTTP and bind `spring.ai.mcp.server.enabled` to `markcraft.mcp.enabled`; reserve `/mcp` from the existing SPA fallback so disabled GET and POST requests return `404` instead of Angular HTML; fail startup if enabled without `markcraft.mcp.token`; enable tool capability only and disable resource, prompt, and completion capabilities plus automatic tool scanning/conversion; require the bearer token on every MCP transport request with constant-time comparison; apply loopback Host and Origin checks on MCP reads and writes; keep token out of responses and logs.
+- **Activity: Verification.** Subtasks: cover disabled GET/POST requests, missing-token startup failure, authorized initialization/discovery, unauthorized setup/read/stream requests, and hostile Host/Origin values on every MCP method and path variant; confirm only tool capability is advertised and existing REST routes and browser behavior remain reachable.
+
+**TASK-MCP-002 — Vault listing and document tools.** Owner: spring-boot-enterprise-architect. Dependencies: TASK-MCP-001. Scope: `get_vault_tree`, `get_document`, `put_document`, and `create_folder` using the existing read, write, and item services/facades. Acceptance: Given a current vault, when an authorized agent reads or creates/updates content, then tool results match the MCP schemas and a browser refresh shows the persisted change; stale revisions and occupied paths leave content unchanged.
+
+- **Activity: Backend engineering.** Subtasks: register four catalog-defined tools through explicit synchronous tool specifications with self-contained schemas; adapt MCP arguments to the existing service/facade calls; map null expected revision to the create-only condition and quote a current revision for the existing conditional-write service; return the contracted structured and text results or `isError` failure codes without duplicating vault rules.
+- **Activity: Verification.** Subtasks: check empty/nested listing, read content and revision, create and current-revision replacement, folder creation, stale/collision/no-parent cases, OKF normalization, path containment, and schema conformance.
+
+**TASK-MCP-003 — Upload, move, and deletion tools.** Owner: spring-boot-enterprise-architect. Dependencies: TASK-MCP-002. Scope: `upload_documents`, `move_item`, and `delete_item` using the existing upload and item services/facades. Acceptance: Given a valid revision, when an agent uploads or moves an item, then the vault reflects the result; deletion fails without changing files while the separate switch is off and permanently removes the current item when enabled.
+
+- **Activity: Backend engineering.** Subtasks: register the remaining three catalog-defined tools; quote unquoted source revisions when calling the existing move/delete services; enforce the separate `markcraft.mcp.agent-deletion-enabled` setting; map batch preflight and partial outcomes to the contracted MCP result; preserve the existing move collision, folder revision, recursive delete, and vault-containment rules.
+- **Activity: Verification.** Subtasks: check create/replacement uploads, duplicate and oversized batches, induced partial upload without replay, move destination collisions, stale file/folder revisions, disabled deletion, enabled recursive deletion, and schema/error conformance.
+
+**TASK-MCP-004 — Client setup and packaged acceptance.** Owner: spring-boot-enterprise-architect. Dependencies: TASK-MCP-003. Scope: local MCP client configuration and operating notes under `docs/`, plus packaged integration evidence. Acceptance: Given the packaged backend and a temporary vault, when the owner follows the documented configuration, then a local MCP client connects with a bearer token and can exercise the full approved workflow while the browser is closed.
+
+- **Activity: Documentation.** Subtasks: add a copyable Streamable HTTP client configuration; document enable, token, and deletion startup settings; explain token storage, default-disabled access, revision use, and partial-upload handling.
+- **Activity: Verification.** Subtasks: run a real local MCP client against the packaged app to inspect tool discovery and all seven actions; verify browser visibility of agent edits, disabled and unauthorized access, deletion gating, stale conflicts, and loopback-only behavior; record evidence under `docs/verification/`.
+
 ## Task status and ownership
 
-Only the matching row may be updated by a task run after its evidence is reviewed. The coordinating agent owns the final status transition. All implementation tasks begin `Not Started`.
+Only the matching row may be updated by a task run after its evidence is reviewed. The coordinating agent owns the final status transition. The original tasks retain their completed evidence; new MCP tasks begin `Not Started`.
 
 | Task ID | Owner | Dependencies | Status | Updated | Evidence / blocker |
 |---|---|---|---|---|---|
@@ -148,14 +179,19 @@ Only the matching row may be updated by a task run after its evidence is reviewe
 | TASK-WEB-006 | angular-enterprise-architect | WEB-003, WEB-005, DESIGN | Completed | 2026-09-23 | Follow-up evidence in `docs/verification/TASK-WEB-006/README.md`: Chrome verified full-source Markdown download, sanitized HTML download/copy/print, cursor position, immediate and restored preferences with invalid-value fallbacks, hidden-sidebar recovery, persisted View mode, modal focus/Escape/return, and clipboard error feedback. `npm test` passed 23 files / 73 tests; lint and production build passed under Node 22.14.0. |
 | TASK-RUN-001 | infrastructure-agent | VAULT-004, WEB-006 | Completed | 2026-09-23 | Added `scripts/package-frontend.sh`, copied Angular browser assets into Spring Boot static resources, added SPA fallback routing that leaves `/api/v1/vault/**` specific routes intact, and documented loopback launch plus vault backup/restore in `docs/operations-local-runtime.md`. `./mvnw test -q` and packaged jar build passed; jar contains `static/index.html`, JS, and CSS. |
 | TASK-VERIFY-001 | task-browser-verification | RUN-001 | Completed | 2026-09-23 | Final latest-package evidence in `docs/verification/task-verify-001.md`: fresh jar served current frontend assets; Chrome verified loopback root, empty-tree `200`, no console/network errors, isolated external vault, packaged folder-name search, and 390px drawer. Frontend 23 files / 74 tests, lint/build passed; `./mvnw clean package -q` passed 44 backend tests. |
+| TASK-MCP-001 | spring-boot-enterprise-architect | Stage 4 MCP approved, RUN-001 | Completed | 2026-09-24 | Spring AI 2.0.1 Streamable HTTP MCP starts only when enabled with a token; disabled GET/POST return 404; authorized initialize and tools/list succeed; missing/invalid tokens, hostile Host/Origin, and path variants are rejected. `./mvnw test -q` passed 50 tests across 14 suites, with 0 failures/errors; existing REST tree remains reachable. |
+| TASK-MCP-002 | spring-boot-enterprise-architect | MCP-001 | Completed | 2026-09-24 | Added catalog-backed synchronous `get_vault_tree`, `get_document`, `put_document`, and `create_folder` tools with self-contained schemas, annotation metadata, existing vault-service reuse, structured/text results, and conflict/error mapping. MCP integration covers empty/nested listing, document read/create/current-revision replacement, OKF normalization, stale revision, occupied path, missing parent, path containment, and REST-visible persistence. `./mvnw test -q` passed 52 tests across 15 suites with 0 failures/errors; `git diff --check` passed. |
+| TASK-MCP-003 | spring-boot-enterprise-architect | MCP-002 | Completed | 2026-09-24 | Registered catalog-backed `upload_documents`, `move_item`, and `delete_item` over existing services; source revisions are quoted for conditional move/delete and deletion honors the independent enable switch. Corrected common tool failures to the contract's text-only error shape. MCP integration covers create/replacement and duplicate uploads, oversized preflight without writes, an induced partial write with committed/failed/notAttempted results and no replay, stale file/folder revisions, move collisions, disabled deletion with no change, and enabled recursive deletion. `./mvnw test -q` passed 56 tests across 17 suites with 0 failures/errors; `git diff --check` passed. |
+| TASK-MCP-004 | spring-boot-enterprise-architect | MCP-003 | Completed | 2026-09-24 | Added local VS Code MCP client setup and operating notes. `./scripts/verify-packaged-mcp.sh` passed against packaged instances in both deletion modes: seven-tool discovery and write/read/revision-conflict/upload-replacement/move/file-delete/recursive-folder-delete behavior passed; missing/invalid tokens returned 401 and hostile Host/Origin returned 400. Browser verification confirmed MCP-written `MCP-agent-visible.md` and saved content in the packaged UI with no console or page errors; evidence: `docs/verification/TASK-MCP-004/README.md`. Final `./mvnw test -q` passed 56 tests across 17 suites with 0 failures/errors; `git diff --check` passed. |
 
 ## Definition of Done
 
 - The task's stated Given-When-Then outcome passes against the approved BRD, architecture, OpenAPI, and, for UI work, `docs/DESIGN.md` with `Ready for Angular` status for that scope.
 - Java code uses Maven and the approved package/layer boundaries; Angular components have separate `.component.ts`, `.component.html`, `.component.scss`, and `.component.spec.ts` files, standalone APIs, and OnPush change detection.
 - Relevant unit/integration/browser checks pass; negative paths cover conflict, invalid input, storage failure, and vault containment where applicable. No upstream artifact or source checkout is changed by a downstream task.
+- For MCP tasks, tool discovery and results match `contracts/mcp/v1-tools.json`; every MCP request enforces its token and local boundary, and agent deletion remains separately gated.
 - The task status row records completion date and evidence. A failed or incomplete check keeps the task `In Progress` or `Blocked` with a concrete reason.
 
 ## Stage gate
 
-This strategy was confirmed by the user on 2026-09-23. The UX handoff separately requires the approved first three stages and a `Ready for Angular` design scope before frontend tasks begin.
+The original 14-task strategy was confirmed by the user on 2026-09-23, and this v1.1 MCP extension was confirmed on 2026-09-24. MCP implementation proceeds one `TASK-MCP-*` per agent run in dependency order. Existing UI design coverage remains sufficient because MCP adds no Angular scope.
