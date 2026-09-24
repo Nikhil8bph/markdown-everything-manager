@@ -127,7 +127,7 @@ public class McpVaultToolHandler {
             throw invalid("arguments", "put_document requires path and content, with only an optional expectedRevision");
         }
         String path = requiredString(arguments, "path");
-        String content = requiredString(arguments, "content");
+        String content = stringField(arguments, "content", true);
         // MCP SDK 2.x drops explicit null map values; an omitted revision is therefore its create-only null.
         Object expectedRevision = arguments.get("expectedRevision");
         if (expectedRevision != null && !(expectedRevision instanceof String)) {
