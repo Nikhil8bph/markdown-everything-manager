@@ -3,15 +3,15 @@
 | Field | Value |
 |---|---|
 | Status | Approved |
-| Version | 1.0 |
-| Date | 2026-09-23 |
-| Required inputs | Approved BRD v1.0 and Application Development Plan v1.0 |
-| Machine-readable contracts | `contracts/openapi/v1.yaml`; `contracts/schemas/okf-frontmatter.schema.json` |
-| Approval evidence | User confirmed this specification and `contracts/openapi/v1.yaml` on 2026-09-23 for implementation planning and UX design. |
+| Version | 1.1 |
+| Date | 2026-09-24 |
+| Required inputs | Approved BRD v1.1 and Application Development Plan v1.1 |
+| Machine-readable contracts | `contracts/openapi/v1.yaml`; `contracts/schemas/okf-frontmatter.schema.json`; `contracts/mcp/v1-tools.json` |
+| Approval evidence | User confirmed the v1.0 specification and existing REST artifacts on 2026-09-23, approved the revised upstream MCP documents on 2026-09-24, and explicitly approved this v1.1 MCP contract on 2026-09-24. |
 
 ## Contract boundary
 
-The Angular browser client calls one same-origin REST API at `/api/v1/vault`. The packaged application listens on `127.0.0.1`; there are no accounts, bearer tokens, roles, external integrations, or messaging. All routes are unauthenticated within that localhost boundary. No per-user or endpoint rate limits are required for the approved single-user deployment; the 25,000,000-byte upload batch cap and same maximum UTF-8 document size bound request resources. The frontend handles Markdown rendering, templates, statistics, preferences, print, copy, and downloads locally; those actions do not create API routes.
+The Angular browser client calls one same-origin REST API at `/api/v1/vault`. The packaged application listens on `127.0.0.1`; the existing REST routes remain unauthenticated within that localhost boundary. The opt-in MCP transport requires an owner-configured bearer token. There are no browser accounts, roles, external AI services, or messaging. No per-user or endpoint rate limits are required for the approved single-user deployment; the 25,000,000-byte upload batch cap and same maximum UTF-8 document size apply to both transports. The frontend handles Markdown rendering, templates, statistics, preferences, print, copy, and downloads locally; those actions do not create API routes.
 
 `contracts/openapi/v1.yaml` is the wire authority. The table below traces routes to the BRD; operation IDs and schemas are in OpenAPI.
 
@@ -86,10 +86,34 @@ JSON successes except `204` use `{ "success": true, "data": ..., "timestamp": "R
 
 The backend checks accepted loopback `Host` values on every request and accepted `Origin` values on mutation requests; development uses the same-origin Angular proxy. No CORS wildcard, cookie session, CSRF token, JWT, or Bucket4j policy is introduced. Retrying `GET` is safe. A failed conditional `PUT` or move/delete must first refresh the revision; never blindly retry a stale mutation. A partially applied upload is reported per file and must not be automatically replayed.
 
+## MCP interface v1
+
+The dedicated MCP endpoint is `/mcp` on the same loopback port as the REST API. It uses Streamable HTTP and the protocol's negotiated JSON-RPC messages. MCP is disabled by default; when disabled, the route is unavailable. Startup properties are `markcraft.mcp.enabled` (default `false`), `markcraft.mcp.token` (required and nonempty when enabled), and `markcraft.mcp.agent-deletion-enabled` (default `false`); the equivalent environment variables use uppercase underscore names. Enabling MCP without a token fails startup. Every request to `/mcp`, including initialization, discovery, reads, notifications, and stream requests, requires `Authorization: Bearer <token>`. Missing or invalid credentials receive HTTP `401` before MCP message handling. Invalid `Host` or nonmatching browser `Origin` receives HTTP `400` before MCP message handling; no cross-origin browser access is granted. An MCP client without an `Origin` header may connect. The token grants whole-vault access; there are no client-specific scopes.
+
+`contracts/mcp/v1-tools.json` is the machine-readable authority for tool names, argument schemas, success schemas, and annotations. Its `$ref` values are local to the catalog and must be resolved into self-contained tool schemas before registration. The tool catalog is stable while the backend runs. MCP exposes tools only: no resources, prompts, sampling, or model invocation. Tool names map one-to-one to existing vault operations:
+
+| Tool | Input summary | Success data | Existing operation | BRD |
+|---|---|---|---|---|
+| `get_vault_tree` | Empty object | Recursive `Node[]` | `getVaultTree` | FR-MCP-003 |
+| `get_document` | Vault-relative `path` | Persisted `Document` | `getDocument` | FR-MCP-003 |
+| `put_document` | `path`, complete `content`, `expectedRevision` | Persisted `Document` | `putDocument` | FR-MCP-004 |
+| `create_folder` | Vault-relative `path` | Folder `Node` | `createFolder` | FR-MCP-004 |
+| `upload_documents` | `folder`, `files[]` with `name`, `content`, `expectedRevision` | Ordered per-file `UploadResult[]` | `uploadDocuments` | FR-MCP-004 |
+| `move_item` | `from`, `to`, `expectedRevision` | Moved `Node` | `moveItem` | FR-MCP-004 |
+| `delete_item` | `path`, `expectedRevision` | Deleted `path` | `deleteItem` | FR-MCP-005 |
+
+For `put_document` and each uploaded file, `expectedRevision: null` means create only; a 64-character unquoted revision means explicitly replace the version the agent read. No prompt is issued by MarkCraft. A collision or stale revision fails without writing. `move_item` never overwrites its destination. `move_item` and `delete_item` require the current source revision. `delete_item` is discoverable but returns `DELETE_DISABLED` without modifying anything until the separate agent-deletion setting is enabled; that setting is off by default. Folder deletion is permanent and includes descendants. All paths, OKF normalization, size limits, batch preflight rules, and partial-write reporting match the REST rules above.
+
+Successful tools return `isError: false`, an object in `structuredContent` matching the catalog's `outputSchema`, and a JSON serialization of that object in one text content block for clients that do not use structured output. The object uses the existing success envelope (`success`, `data`, `timestamp`); a partial upload returns `isError: false` with `success: false` and ordered per-file results so callers can inspect committed and failed files without replaying the batch. `delete_item` uses a success object with the deleted relative path because an MCP tool result cannot be an empty HTTP `204`.
+
+Expected tool failures return `isError: true` and one text content block containing a JSON object `{ "code": string, "message": string, "details": [] }`, using the existing REST error codes where applicable and `DELETE_DISABLED` for the separate deletion policy. No `structuredContent` is returned for a failed call. Invalid tool arguments return `INVALID_REQUEST`; invalid vault paths return `INVALID_PATH`; absent paths return `NOT_FOUND`; create or destination collisions return `PATH_EXISTS`; duplicate batch paths return `DUPLICATE_BATCH_PATH`; stale revisions return `REVISION_CONFLICT`; oversized content returns `PAYLOAD_TOO_LARGE`; malformed frontmatter returns `INVALID_FRONTMATTER`; unsupported file types return `UNSUPPORTED_FILE`; storage failures return `STORAGE_FAILURE`. Protocol-level malformed JSON-RPC and unknown tools follow MCP errors. Never include the token, absolute host paths, or document content in an error.
+
+The setup guide must show a local Streamable HTTP client configuration with the endpoint and bearer token, plus startup settings for MCP enablement and optional agent deletion. It must tell the owner to keep the token out of source control and logs. No browser settings surface or REST contract change is required.
+
 ## Events and external integrations
 
-None are approved in the architecture. There is no AsyncAPI artifact and no Kafka, payment, notification, email, SMS, or external AI contract for this release.
+None are approved in the architecture. There is no AsyncAPI artifact and no Kafka, payment, notification, email, SMS, or external AI contract for this release. MCP is a local client-to-backend integration defined above.
 
 ## Contract checks and stage gate
 
-OpenAPI YAML parsed, all 92 local references resolved, and the OKF JSON Schema validated on 2026-09-23. A full OpenAPI validator was not installed. The user confirmed this document and its machine-readable artifacts on 2026-09-23. Downstream stages treat these artifacts as read-only; revisions return to this contract stage.
+The v1.0 REST OpenAPI YAML parsed, all 92 local references resolved, and the OKF JSON Schema validated on 2026-09-23; a full OpenAPI validator was not installed. On 2026-09-24, the MCP catalog parsed as JSON, all 45 local references resolved, and its catalog and 14 referenced tool schemas passed JSON Schema 2020-12 structural validation. The user confirmed the v1.0 document and REST artifacts on 2026-09-23 and explicitly confirmed this v1.1 MCP revision on 2026-09-24. Stage 4 must revise `docs/04-implementation-strategy.md` and its traceability/task gates before any MCP implementation begins. Downstream stages treat this document and every file under `contracts/` as read-only.
